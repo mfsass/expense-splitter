@@ -1,6 +1,7 @@
 // App.tsx - Expense Splitter PWA
 import { useState, useCallback, useEffect } from "react";
 import Papa from "papaparse";
+import "./App.css";
 import {
   DollarSign,
   Upload,
@@ -263,11 +264,11 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background-light to-white dark:from-background-dark dark:to-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-500">
-      <header className="sticky top-0 z-10 bg-white/80 dark:bg-gray-800/80 border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 backdrop-blur-xl shadow-soft">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden">
+      <header className="sticky top-0 z-50 glass border-b border-white/10 px-6 py-4">
         <div className="flex justify-between items-center max-w-4xl mx-auto animate-fade-in">
-          <h1 className="text-xl font-bold text-primary tracking-tight flex items-center gap-2">
-            <DollarSign className="w-6 h-6" />
+          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            <DollarSign className="w-6 h-6 text-blue-400" />
             Expense Splitter
           </h1>
           <div className="flex items-center gap-3">
@@ -404,58 +405,120 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
               </div>
             </div>
 
-            {/* Transaction Card */}
-            <div className="flex-1 flex items-center justify-center p-6 bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/50">
-              <div
-                className="max-w-sm w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-[2rem] shadow-card-hover p-10 text-center border border-gray-200/50 dark:border-gray-700/50 transform hover:scale-[1.02] transition-all duration-300 animate-scale-in select-none"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{
-                  transform: swipeState.isDragging
-                    ? `translateX(${
-                        swipeState.currentX - swipeState.startX
-                      }px) rotate(${
-                        (swipeState.currentX - swipeState.startX) * 0.1
-                      }deg)`
-                    : "translateX(0px) rotate(0deg)",
-                  transition: swipeState.isDragging
-                    ? "none"
-                    : "transform 0.3s ease-out",
-                }}
-              >
-                <div className="text-5xl font-black mb-6 text-gray-900 dark:text-white bg-gradient-to-br from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                  {fmt(current.amount)}
-                </div>
-                <div className="text-xl mb-6 text-gray-700 dark:text-gray-300 leading-relaxed font-medium line-clamp-2">
-                  {current.description}
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 font-semibold tracking-wider uppercase">
-                  {fmtDate(current.date)}
+            {/* Transaction Card Stack */}
+            <div className="flex-1 flex items-center justify-center p-6 relative card-stack">
+              <div className="relative w-full max-w-sm h-96">
+                {/* Background cards (stack effect) */}
+                {transactions
+                  .slice(currentIndex, currentIndex + 3)
+                  .map((_, i) => (
+                    <div
+                      key={`bg-${currentIndex + i}`}
+                      className="absolute inset-0 glass-dark rounded-[2rem] border border-white/10"
+                      style={{
+                        transform: `scale(${1 - i * 0.05}) translateY(${
+                          i * 8
+                        }px)`,
+                        zIndex: 10 - i,
+                        opacity: 1 - i * 0.3,
+                      }}
+                    />
+                  ))}
+
+                {/* Active swipe card */}
+                <div
+                  className={`absolute inset-0 glass rounded-[2rem] p-8 text-center border border-white/20 shadow-2xl swipe-card ${
+                    swipeState.isDragging ? "dragging" : ""
+                  }`}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  style={{
+                    transform: swipeState.isDragging
+                      ? `translateX(${
+                          swipeState.currentX - swipeState.startX
+                        }px) translateY(${
+                          swipeState.currentY - swipeState.startY
+                        }px) rotate(${
+                          (swipeState.currentX - swipeState.startX) * 0.1
+                        }deg)`
+                      : "translateX(0px) translateY(0px) rotate(0deg)",
+                    zIndex: 20,
+                  }}
+                >
+                  {/* Swipe indicators */}
+                  <div
+                    className="absolute top-8 left-8 swipe-indicator-left"
+                    style={{
+                      opacity:
+                        swipeState.isDragging &&
+                        swipeState.currentX - swipeState.startX < -50
+                          ? 1
+                          : 0,
+                    }}
+                  >
+                    PERSONAL
+                  </div>
+                  <div
+                    className="absolute top-8 right-8 swipe-indicator-right"
+                    style={{
+                      opacity:
+                        swipeState.isDragging &&
+                        swipeState.currentX - swipeState.startX > 50
+                          ? 1
+                          : 0,
+                    }}
+                  >
+                    SPLIT
+                  </div>
+                  <div
+                    className="absolute top-8 left-1/2 transform -translate-x-1/2 swipe-indicator-up"
+                    style={{
+                      opacity:
+                        swipeState.isDragging &&
+                        swipeState.currentY - swipeState.startY < -50
+                          ? 1
+                          : 0,
+                    }}
+                  >
+                    50/50
+                  </div>
+
+                  <div className="flex flex-col justify-center h-full">
+                    <div className="text-5xl font-black mb-6 text-white">
+                      {fmt(current.amount)}
+                    </div>
+                    <div className="text-xl mb-6 text-slate-200 leading-relaxed font-medium">
+                      {current.description}
+                    </div>
+                    <div className="text-sm text-slate-400 font-semibold tracking-wider uppercase">
+                      {fmtDate(current.date)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50">
+            <div className="p-6 glass border-t border-white/10">
               <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
                 <button
                   onClick={() => decide("personal")}
-                  className="py-5 px-4 bg-gradient-to-br from-danger/10 to-red-100/80 hover:from-danger/20 hover:to-red-100 text-danger rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-danger/20 hover:border-danger/40 flex flex-col items-center gap-2 shadow-soft hover:shadow-card transform hover:scale-105 active:scale-95"
+                  className="py-5 px-4 bg-gradient-to-br from-red-500/20 to-pink-500/20 hover:from-red-500/30 hover:to-pink-500/30 text-red-400 rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-red-500/30 hover:border-red-500/50 flex flex-col items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 glass"
                 >
                   <User className="w-5 h-5" />
                   Personal
                 </button>
                 <button
                   onClick={() => decide("split50")}
-                  className="py-5 px-4 bg-gradient-to-br from-success/10 to-emerald-100/80 hover:from-success/20 hover:to-emerald-100 text-success rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-success/20 hover:border-success/40 flex flex-col items-center gap-2 shadow-soft hover:shadow-card transform hover:scale-105 active:scale-95"
+                  className="py-5 px-4 bg-gradient-to-br from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 text-green-400 rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-green-500/30 hover:border-green-500/50 flex flex-col items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 glass"
                 >
                   <Users className="w-5 h-5" />
                   50/50 Split
                 </button>
                 <button
                   onClick={() => decide("split")}
-                  className="py-5 px-4 bg-gradient-to-br from-warning/10 to-orange-100/80 hover:from-warning/20 hover:to-orange-100 text-warning rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-warning/20 hover:border-warning/40 flex flex-col items-center gap-2 shadow-soft hover:shadow-card transform hover:scale-105 active:scale-95"
+                  className="py-5 px-4 bg-gradient-to-br from-orange-500/20 to-yellow-500/20 hover:from-orange-500/30 hover:to-yellow-500/30 text-orange-400 rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-orange-500/30 hover:border-orange-500/50 flex flex-col items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 glass"
                 >
                   <DollarSign className="w-5 h-5" />
                   {Math.round(ratio * 100)}% Split
@@ -470,31 +533,40 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
             const res = calculate();
             return (
               <div className="flex-1 overflow-auto p-4">
-                <div className="max-w-lg mx-auto space-y-4">
-                  <div className="bg-white dark:bg-gray-800 rounded p-4 shadow">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        {fmt(res.totals.partnerOwes)}
-                      </div>
-                      <div>Partner owes you</div>
+                <div className="max-w-lg mx-auto space-y-6">
+                  <div className="glass rounded-3xl p-6 text-center">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-2">
+                      {fmt(res.totals.partnerOwes)}
                     </div>
+                    <div className="text-gray-300">Partner owes you</div>
                   </div>
 
-                  <div className="bg-white dark:bg-gray-800 rounded p-4 shadow">
-                    <h3 className="font-semibold mb-2">Top Shared</h3>
-                    {res.top.map((t) => (
-                      <div key={t.id} className="flex justify-between py-1">
-                        <span className="truncate">{t.description}</span>
-                        <span>{fmt(t.amount)}</span>
-                      </div>
-                    ))}
+                  <div className="glass rounded-3xl p-6">
+                    <h3 className="font-semibold mb-4 text-white text-lg">
+                      Top Shared Expenses
+                    </h3>
+                    <div className="space-y-3">
+                      {res.top.map((t) => (
+                        <div
+                          key={t.id}
+                          className="flex justify-between items-center py-2 border-b border-white/10 last:border-b-0"
+                        >
+                          <span className="truncate text-gray-300">
+                            {t.description}
+                          </span>
+                          <span className="text-white font-medium">
+                            {fmt(t.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <button
                     onClick={share}
-                    className="w-full bg-primary text-white py-3 px-6 rounded-xl font-semibold transition-colors shadow-lg flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white py-4 px-6 rounded-3xl font-bold transition-all duration-300 shadow-xl flex items-center justify-center gap-3 transform hover:scale-105 active:scale-95"
                   >
-                    <Share2 className="w-4 h-4" />
+                    <Share2 className="w-5 h-5" />
                     Share Report
                   </button>
                 </div>
@@ -505,9 +577,11 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
 
       {/* ratio picker modal */}
       {showRatio && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-40">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-            <label className="text-sm">Your share %</label>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40">
+          <div className="glass rounded-3xl p-6 m-4 max-w-sm w-full">
+            <label className="text-lg font-semibold text-white mb-4 block">
+              Your share %
+            </label>
             <input
               type="range"
               min="50"
@@ -515,14 +589,17 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
               step="5"
               value={ratio * 100}
               onChange={(e) => setRatio(Number(e.target.value) / 100)}
-              className="w-full"
+              className="w-full h-2 bg-white/20 rounded-lg appearance-none slider mb-4"
             />
-            <div className="text-center mt-2">
-              {Math.round(ratio * 100)} / {Math.round((1 - ratio) * 100)}
+            <div className="text-center mb-6">
+              <div className="text-2xl font-bold text-white">
+                {Math.round(ratio * 100)}% / {Math.round((1 - ratio) * 100)}%
+              </div>
+              <div className="text-gray-300 text-sm">You / Partner</div>
             </div>
             <button
               onClick={() => setShowRatio(false)}
-              className="mt-2 w-full bg-primary text-white py-1 rounded"
+              className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white py-3 rounded-2xl font-bold transition-all duration-300 transform hover:scale-105 active:scale-95"
             >
               Done
             </button>
