@@ -1,20 +1,20 @@
 // App.tsx - Expense Splitter PWA
-import { useState, useCallback, useEffect } from 'react';
-import Papa from 'papaparse';
-import { 
-  DollarSign, 
-  Upload, 
-  CheckCircle, 
-  ArrowLeft, 
-  ArrowRight, 
-  ArrowUp, 
-  Sun, 
-  Moon, 
-  RotateCcw, 
+import { useState, useCallback, useEffect } from "react";
+import Papa from "papaparse";
+import {
+  DollarSign,
+  Upload,
+  CheckCircle,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Sun,
+  Moon,
+  RotateCcw,
   Share2,
   User,
-  Users
-} from 'lucide-react';
+  Users,
+} from "lucide-react";
 
 interface Transaction {
   id: number;
@@ -25,8 +25,8 @@ interface Transaction {
   rawAmount: number;
 }
 
-type DecisionType = 'personal' | 'split50' | 'split';
-type StepType = 'upload' | 'confirm' | 'swipe' | 'summary';
+type DecisionType = "personal" | "split50" | "split";
+type StepType = "upload" | "confirm" | "swipe" | "summary";
 
 interface SwipeState {
   startX: number;
@@ -37,13 +37,15 @@ interface SwipeState {
 }
 
 const ExpenseSplitterApp = () => {
-  const [step, setStep] = useState<StepType>('upload');
+  const [step, setStep] = useState<StepType>("upload");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [decisions, setDecisions] = useState<Record<number, DecisionType>>({});
   const [ratio, setRatio] = useState(0.7); // 70/30 default
   const [showRatio, setShowRatio] = useState(false);
-  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [dark, setDark] = useState(
+    () => localStorage.getItem("theme") === "dark"
+  );
   const [swipeState, setSwipeState] = useState<SwipeState>({
     startX: 0,
     startY: 0,
@@ -54,18 +56,18 @@ const ExpenseSplitterApp = () => {
 
   // dark mode
   useEffect(() => {
-    if (dark) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
+    if (dark) document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+    localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
   // persist decisions in session
   useEffect(() => {
-    const raw = sessionStorage.getItem('decisions');
+    const raw = sessionStorage.getItem("decisions");
     if (raw) setDecisions(JSON.parse(raw));
   }, []);
   useEffect(() => {
-    sessionStorage.setItem('decisions', JSON.stringify(decisions));
+    sessionStorage.setItem("decisions", JSON.stringify(decisions));
   }, [decisions]);
 
   const handleFileUpload = useCallback((file: File) => {
@@ -76,20 +78,23 @@ const ExpenseSplitterApp = () => {
         const parsed = results.data
           .map((row: any, index: number): Transaction => {
             const amount = parseFloat(row.Amount || row.amount || 0);
-            const date = new Date(row['Value Date'] || row.date || row.Date);
+            const date = new Date(row["Value Date"] || row.date || row.Date);
             return {
               id: index,
               date,
-              description: row.Description || row.description || '',
+              description: row.Description || row.description || "",
               amount: Math.abs(amount),
               isCredit: amount > 0,
               rawAmount: amount,
             };
           })
           .filter((t: Transaction) => !isNaN(t.amount) && t.amount !== 0)
-          .sort((a: Transaction, b: Transaction) => a.date.getTime() - b.date.getTime());
+          .sort(
+            (a: Transaction, b: Transaction) =>
+              a.date.getTime() - b.date.getTime()
+          );
         setTransactions(parsed);
-        setStep('confirm');
+        setStep("confirm");
       },
     });
   }, []);
@@ -98,7 +103,7 @@ const ExpenseSplitterApp = () => {
     (type: DecisionType) => {
       setDecisions((d) => ({ ...d, [transactions[currentIndex].id]: type }));
       if (currentIndex < transactions.length - 1) setCurrentIndex((i) => i + 1);
-      else setStep('summary');
+      else setStep("summary");
     },
     [currentIndex, transactions]
   );
@@ -106,62 +111,68 @@ const ExpenseSplitterApp = () => {
   // keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (step !== 'swipe') return;
-      if (e.key === 'ArrowLeft') decide('personal');
-      if (e.key === 'ArrowRight') decide('split');
-      if (e.key === 'ArrowUp') decide('split50');
+      if (step !== "swipe") return;
+      if (e.key === "ArrowLeft") decide("personal");
+      if (e.key === "ArrowRight") decide("split");
+      if (e.key === "ArrowUp") decide("split50");
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [step, decide]);
 
   // Touch/swipe handlers for mobile
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (step !== 'swipe') return;
-    const touch = e.touches[0];
-    setSwipeState({
-      startX: touch.clientX,
-      startY: touch.clientY,
-      currentX: touch.clientX,
-      currentY: touch.clientY,
-      isDragging: true,
-    });
-  }, [step]);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (step !== "swipe") return;
+      const touch = e.touches[0];
+      setSwipeState({
+        startX: touch.clientX,
+        startY: touch.clientY,
+        currentX: touch.clientX,
+        currentY: touch.clientY,
+        isDragging: true,
+      });
+    },
+    [step]
+  );
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (step !== 'swipe' || !swipeState.isDragging) return;
-    const touch = e.touches[0];
-    setSwipeState(prev => ({
-      ...prev,
-      currentX: touch.clientX,
-      currentY: touch.clientY,
-    }));
-  }, [step, swipeState.isDragging]);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (step !== "swipe" || !swipeState.isDragging) return;
+      const touch = e.touches[0];
+      setSwipeState((prev) => ({
+        ...prev,
+        currentX: touch.clientX,
+        currentY: touch.clientY,
+      }));
+    },
+    [step, swipeState.isDragging]
+  );
 
   const handleTouchEnd = useCallback(() => {
-    if (step !== 'swipe' || !swipeState.isDragging) return;
-    
+    if (step !== "swipe" || !swipeState.isDragging) return;
+
     const deltaX = swipeState.currentX - swipeState.startX;
     const deltaY = swipeState.currentY - swipeState.startY;
     const threshold = 50;
 
     // Reset swipe state
-    setSwipeState(prev => ({ ...prev, isDragging: false }));
+    setSwipeState((prev) => ({ ...prev, isDragging: false }));
 
     // Determine swipe direction
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
       // Horizontal swipe
       if (Math.abs(deltaX) > threshold) {
         if (deltaX > 0) {
-          decide('split'); // Swipe right = split
+          decide("split"); // Swipe right = split
         } else {
-          decide('personal'); // Swipe left = personal
+          decide("personal"); // Swipe left = personal
         }
       }
     } else {
       // Vertical swipe
       if (Math.abs(deltaY) > threshold && deltaY < 0) {
-        decide('split50'); // Swipe up = 50/50
+        decide("split50"); // Swipe up = 50/50
       }
     }
   }, [step, swipeState, decide]);
@@ -179,13 +190,23 @@ const ExpenseSplitterApp = () => {
   };
 
   const calculate = useCallback(() => {
-    const cat: Record<DecisionType, Transaction[]> = { personal: [], split50: [], split: [] };
+    const cat: Record<DecisionType, Transaction[]> = {
+      personal: [],
+      split50: [],
+      split: [],
+    };
     transactions.forEach((t) => {
       const d = decisions[t.id];
       if (d && cat[d]) cat[d].push(t);
     });
-    const splitTotal = cat.split.reduce((s, t) => s + (t.isCredit ? -t.amount : t.amount), 0);
-    const split50Total = cat.split50.reduce((s, t) => s + (t.isCredit ? -t.amount : t.amount), 0);
+    const splitTotal = cat.split.reduce(
+      (s, t) => s + (t.isCredit ? -t.amount : t.amount),
+      0
+    );
+    const split50Total = cat.split50.reduce(
+      (s, t) => s + (t.isCredit ? -t.amount : t.amount),
+      0
+    );
     const partnerSplit = splitTotal * (1 - ratio);
     const partner50 = split50Total * 0.5;
     return {
@@ -197,35 +218,48 @@ const ExpenseSplitterApp = () => {
         partnerOwes: partnerSplit + partner50,
       },
       breakdown: { partnerSplit, partner50 },
-      top: [...cat.split, ...cat.split50].sort((a, b) => b.amount - a.amount).slice(0, 5),
+      top: [...cat.split, ...cat.split50]
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 5),
     };
   }, [decisions, transactions, ratio]);
 
   const fmt = (v: number) =>
-    new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(v);
+    new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: "ZAR",
+    }).format(v);
   const fmtDate = (d: Date) =>
-    new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
+    new Intl.DateTimeFormat("en-ZA", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(d);
 
   const reset = () => {
-    setStep('upload');
+    setStep("upload");
     setTransactions([]);
     setCurrentIndex(0);
     setDecisions({});
-    sessionStorage.removeItem('decisions');
+    sessionStorage.removeItem("decisions");
   };
 
   const current = transactions[currentIndex];
-  const progress = transactions.length ? ((currentIndex / transactions.length) * 100).toFixed(0) : 0;
+  const progress = transactions.length
+    ? ((currentIndex / transactions.length) * 100).toFixed(0)
+    : 0;
 
   const share = async () => {
     const res = calculate();
     const text = `Expense Split
-Period: ${transactions[0] ? fmtDate(transactions[0].date) : ''} – ${transactions.at(-1) ? fmtDate(transactions.at(-1)!.date) : ''}
+Period: ${transactions[0] ? fmtDate(transactions[0].date) : ""} – ${
+      transactions.at(-1) ? fmtDate(transactions.at(-1)!.date) : ""
+    }
 Partner owes: ${fmt(res.totals.partnerOwes)}
 `;
-    if (navigator.share) await navigator.share({ title: 'Split Report', text });
+    if (navigator.share) await navigator.share({ title: "Split Report", text });
     else await navigator.clipboard.writeText(text);
-    alert('Copied to clipboard');
+    alert("Copied to clipboard");
   };
 
   return (
@@ -237,23 +271,27 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
             Expense Splitter
           </h1>
           <div className="flex items-center gap-3">
-            {step !== 'upload' && (
-              <button 
-                onClick={() => setShowRatio(!showRatio)} 
+            {step !== "upload" && (
+              <button
+                onClick={() => setShowRatio(!showRatio)}
                 className="px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
               >
                 {Math.round(ratio * 100)}/{Math.round((1 - ratio) * 100)}
               </button>
             )}
-            <button 
-              onClick={() => setDark(!dark)} 
+            <button
+              onClick={() => setDark(!dark)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {dark ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
             </button>
-            {step !== 'upload' && (
-              <button 
-                onClick={reset} 
+            {step !== "upload" && (
+              <button
+                onClick={reset}
                 className="px-3 py-1.5 text-sm font-medium text-danger bg-danger/10 hover:bg-danger/20 rounded-lg transition-colors flex items-center gap-1"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -265,45 +303,59 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
       </header>
 
       <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
-        {step === 'upload' && (
+        {step === "upload" && (
           <div className="flex-1 flex items-center justify-center p-6">
             <div className="max-w-md w-full animate-slide-up">
               <div className="text-center mb-8">
                 <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary to-purple-600 rounded-3xl flex items-center justify-center shadow-glow transform hover:scale-105 transition-transform duration-200">
                   <Upload className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">Upload Bank Statement</h2>
-                <p className="text-gray-600 dark:text-gray-400 text-lg">Upload your CSV file to get started with expense splitting</p>
+                <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                  Upload Bank Statement
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 text-lg">
+                  Upload your CSV file to get started with expense splitting
+                </p>
               </div>
               <div className="relative group">
                 <input
                   type="file"
                   accept=".csv"
-                  onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                  onChange={(e) =>
+                    e.target.files?.[0] && handleFileUpload(e.target.files[0])
+                  }
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-4 file:px-8 file:rounded-2xl file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-primary file:to-purple-600 file:text-white hover:file:shadow-glow file:cursor-pointer cursor-pointer bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 hover:border-primary/50 hover:shadow-card-hover transition-all duration-300 group-hover:scale-[1.02]"
                 />
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">Click to select or drag CSV file here</span>
+                  <span className="text-gray-400 text-sm">
+                    Click to select or drag CSV file here
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {step === 'confirm' && (
+        {step === "confirm" && (
           <div className="flex-1 flex items-center justify-center p-6">
             <div className="max-w-sm w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 shadow-card-hover border border-gray-200/50 dark:border-gray-700/50 animate-scale-in">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-success to-emerald-600 rounded-2xl flex items-center justify-center shadow-glow transform hover:rotate-12 transition-transform duration-300">
                   <CheckCircle className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Ready to Process</h2>
+                <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+                  Ready to Process
+                </h2>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                  Found <span className="font-bold text-primary text-lg">{transactions.length}</span> transactions
+                  Found{" "}
+                  <span className="font-bold text-primary text-lg">
+                    {transactions.length}
+                  </span>{" "}
+                  transactions
                 </p>
               </div>
               <button
-                onClick={() => setStep('swipe')}
+                onClick={() => setStep("swipe")}
                 className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white py-4 px-6 rounded-2xl font-bold transition-all duration-300 shadow-glow hover:shadow-lg transform hover:scale-105 active:scale-95"
               >
                 Start Categorizing →
@@ -312,7 +364,7 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
           </div>
         )}
 
-        {step === 'swipe' && current && (
+        {step === "swipe" && current && (
           <div className="flex-1 flex flex-col">
             {/* Progress Header */}
             <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -321,8 +373,8 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
                   {currentIndex + 1} of {transactions.length}
                 </span>
                 {currentIndex > 0 && (
-                  <button 
-                    onClick={undo} 
+                  <button
+                    onClick={undo}
                     className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
                   >
                     <ArrowLeft className="w-3 h-3" />
@@ -331,8 +383,8 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
                 )}
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3">
-                <div 
-                  style={{ width: `${progress}%` }} 
+                <div
+                  style={{ width: `${progress}%` }}
                   className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all duration-300"
                 />
               </div>
@@ -354,16 +406,22 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
 
             {/* Transaction Card */}
             <div className="flex-1 flex items-center justify-center p-6 bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/50">
-              <div 
+              <div
                 className="max-w-sm w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-[2rem] shadow-card-hover p-10 text-center border border-gray-200/50 dark:border-gray-700/50 transform hover:scale-[1.02] transition-all duration-300 animate-scale-in select-none"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
                 style={{
-                  transform: swipeState.isDragging 
-                    ? `translateX(${swipeState.currentX - swipeState.startX}px) rotate(${(swipeState.currentX - swipeState.startX) * 0.1}deg)` 
-                    : 'translateX(0px) rotate(0deg)',
-                  transition: swipeState.isDragging ? 'none' : 'transform 0.3s ease-out',
+                  transform: swipeState.isDragging
+                    ? `translateX(${
+                        swipeState.currentX - swipeState.startX
+                      }px) rotate(${
+                        (swipeState.currentX - swipeState.startX) * 0.1
+                      }deg)`
+                    : "translateX(0px) rotate(0deg)",
+                  transition: swipeState.isDragging
+                    ? "none"
+                    : "transform 0.3s ease-out",
                 }}
               >
                 <div className="text-5xl font-black mb-6 text-gray-900 dark:text-white bg-gradient-to-br from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
@@ -381,22 +439,22 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
             {/* Action Buttons */}
             <div className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50">
               <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-                <button 
-                  onClick={() => decide('personal')} 
+                <button
+                  onClick={() => decide("personal")}
                   className="py-5 px-4 bg-gradient-to-br from-danger/10 to-red-100/80 hover:from-danger/20 hover:to-red-100 text-danger rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-danger/20 hover:border-danger/40 flex flex-col items-center gap-2 shadow-soft hover:shadow-card transform hover:scale-105 active:scale-95"
                 >
                   <User className="w-5 h-5" />
                   Personal
                 </button>
-                <button 
-                  onClick={() => decide('split50')} 
+                <button
+                  onClick={() => decide("split50")}
                   className="py-5 px-4 bg-gradient-to-br from-success/10 to-emerald-100/80 hover:from-success/20 hover:to-emerald-100 text-success rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-success/20 hover:border-success/40 flex flex-col items-center gap-2 shadow-soft hover:shadow-card transform hover:scale-105 active:scale-95"
                 >
                   <Users className="w-5 h-5" />
                   50/50 Split
                 </button>
-                <button 
-                  onClick={() => decide('split')} 
+                <button
+                  onClick={() => decide("split")}
                   className="py-5 px-4 bg-gradient-to-br from-warning/10 to-orange-100/80 hover:from-warning/20 hover:to-orange-100 text-warning rounded-3xl font-bold transition-all duration-300 text-sm border-2 border-warning/20 hover:border-warning/40 flex flex-col items-center gap-2 shadow-soft hover:shadow-card transform hover:scale-105 active:scale-95"
                 >
                   <DollarSign className="w-5 h-5" />
@@ -407,36 +465,42 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
           </div>
         )}
 
-        {step === 'summary' && (() => {
-          const res = calculate();
-          return (
-            <div className="flex-1 overflow-auto p-4">
-              <div className="max-w-lg mx-auto space-y-4">
-                <div className="bg-white dark:bg-gray-800 rounded p-4 shadow">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{fmt(res.totals.partnerOwes)}</div>
-                    <div>Partner owes you</div>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded p-4 shadow">
-                  <h3 className="font-semibold mb-2">Top Shared</h3>
-                  {res.top.map((t) => (
-                    <div key={t.id} className="flex justify-between py-1">
-                      <span className="truncate">{t.description}</span>
-                      <span>{fmt(t.amount)}</span>
+        {step === "summary" &&
+          (() => {
+            const res = calculate();
+            return (
+              <div className="flex-1 overflow-auto p-4">
+                <div className="max-w-lg mx-auto space-y-4">
+                  <div className="bg-white dark:bg-gray-800 rounded p-4 shadow">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">
+                        {fmt(res.totals.partnerOwes)}
+                      </div>
+                      <div>Partner owes you</div>
                     </div>
-                  ))}
-                </div>
+                  </div>
 
-                <button onClick={share} className="w-full bg-primary text-white py-3 px-6 rounded-xl font-semibold transition-colors shadow-lg flex items-center justify-center gap-2">
-                  <Share2 className="w-4 h-4" />
-                  Share Report
-                </button>
+                  <div className="bg-white dark:bg-gray-800 rounded p-4 shadow">
+                    <h3 className="font-semibold mb-2">Top Shared</h3>
+                    {res.top.map((t) => (
+                      <div key={t.id} className="flex justify-between py-1">
+                        <span className="truncate">{t.description}</span>
+                        <span>{fmt(t.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={share}
+                    className="w-full bg-primary text-white py-3 px-6 rounded-xl font-semibold transition-colors shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share Report
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
       </main>
 
       {/* ratio picker modal */}
@@ -453,8 +517,13 @@ Partner owes: ${fmt(res.totals.partnerOwes)}
               onChange={(e) => setRatio(Number(e.target.value) / 100)}
               className="w-full"
             />
-            <div className="text-center mt-2">{Math.round(ratio * 100)} / {Math.round((1 - ratio) * 100)}</div>
-            <button onClick={() => setShowRatio(false)} className="mt-2 w-full bg-primary text-white py-1 rounded">
+            <div className="text-center mt-2">
+              {Math.round(ratio * 100)} / {Math.round((1 - ratio) * 100)}
+            </div>
+            <button
+              onClick={() => setShowRatio(false)}
+              className="mt-2 w-full bg-primary text-white py-1 rounded"
+            >
               Done
             </button>
           </div>
