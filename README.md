@@ -1,4 +1,44 @@
-# React + TypeScript + Vite
+# Expense Splitter
+
+A React + TypeScript + Vite application for splitting expenses between people.
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm run start
+
+# Run linting
+npm run lint
+
+# Preview production build (alternative to start)
+npm run preview
+```
+
+## Deployment
+
+For deployment platforms, use the following commands:
+
+1. **Build Command**: `npm run build`
+2. **Start Command**: `npm run start` (serves the built files from dist/ directory)
+
+**Important**: Never use `npm run dev` as a deployment command as it starts a development server that runs indefinitely and will cause timeouts.
+
+The production build will be output to the `dist/` directory. You can either:
+- Use `npm run start` to serve the built files with the included serve package
+- Deploy the `dist/` directory to any static hosting service
+- Use `npm run preview` for local testing of the production build
+
+## Original Template Info
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
